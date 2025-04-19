@@ -24,7 +24,7 @@ export default function Home() {
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://property-portal-backend-u31h.onrender.com';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
   useEffect(() => {
     setIsMounted(true);
