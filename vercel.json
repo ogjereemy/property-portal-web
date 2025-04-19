@@ -8,11 +8,19 @@
     ],
     "routes": [
       {
+        "src": "/_next/static/(.*)",
+        "dest": "/_next/static/$1"
+      },
+      {
+        "src": "/_next/(.*)",
+        "dest": "/_next/$1"
+      },
+      {
         "src": "/(.*)",
         "dest": "/"
       }
     ],
     "env": {
-      "NEXT_PUBLIC_API_URL": "https://property-portal-backend-u31h.onrender.com"
+      "NEXT_PUBLIC_API_URL": ""
     }
   }
