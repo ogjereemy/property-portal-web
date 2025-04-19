@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios, { AxiosError } from 'axios';
-import { User, Listing, LoginResponse } from '../types';
+import { User, Listing, LoginResponse } from '../app/types';
 
 export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
@@ -24,7 +24,7 @@ export default function Home() {
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://property-portal-backend-u31h.onrender.com';
 
   useEffect(() => {
     setIsMounted(true);
