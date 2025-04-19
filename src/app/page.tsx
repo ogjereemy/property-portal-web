@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios, { AxiosError } from 'axios';
 import { User, Listing, LoginResponse } from '../app/types';
 
@@ -10,9 +10,6 @@ export default function Home() {
   const [token, setToken] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState<string>('');
-
-
-  
   const [password, setPassword] = useState<string>('');
   const [newListing, setNewListing] = useState<Partial<Listing>>({
     title: '',
@@ -26,24 +23,7 @@ export default function Home() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
-  useEffect(() => {
-    setIsMounted(true);
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      setToken(storedToken);
-      fetchListings(storedToken);
-      fetchUser(storedToken);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
-
-  const fetchListings = async (authToken: string) => {
+  const fetchListings = useCallback(async (authToken: string) => {
     try {
       const params: { price_max?: string; location?: string } = {};
       if (filters.price_max) params.price_max = filters.price_max;
@@ -56,9 +36,9 @@ export default function Home() {
     } catch (error) {
       console.error('Failed to fetch listings', error);
     }
-  };
+  }, [filters]);
 
-  const fetchUser = async (authToken: string) => {
+  const fetchUser = useCallback(async (authToken: string) => {
     try {
       const { data } = await axios.get<LoginResponse>(`${API_URL}/api/user`, {
         headers: { Authorization: `Bearer ${authToken}` },
@@ -70,7 +50,7 @@ export default function Home() {
       setToken('');
       localStorage.removeItem('token');
     }
-  };
+  }, []);
 
   const handleLogin = async () => {
     try {
@@ -115,6 +95,23 @@ export default function Home() {
   const handleFilter = () => {
     if (token) fetchListings(token);
   };
+
+  useEffect(() => {
+    setIsMounted(true);
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
+      fetchListings(storedToken);
+      fetchUser(storedToken);
+    }
+  }, [fetchListings, fetchUser]);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   if (!isMounted) return null;
 
