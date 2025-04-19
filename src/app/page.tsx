@@ -10,6 +10,9 @@ export default function Home() {
   const [token, setToken] = useState<string>('');
   const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState<string>('');
+
+
+  
   const [password, setPassword] = useState<string>('');
   const [newListing, setNewListing] = useState<Partial<Listing>>({
     title: '',
@@ -20,6 +23,8 @@ export default function Home() {
   const [filters, setFilters] = useState<{ price_max?: string; location?: string }>({});
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
   useEffect(() => {
     setIsMounted(true);
@@ -43,7 +48,7 @@ export default function Home() {
       const params: { price_max?: string; location?: string } = {};
       if (filters.price_max) params.price_max = filters.price_max;
       if (filters.location) params.location = filters.location;
-      const { data } = await axios.get<Listing[]>('http://localhost:3000/api/listings', {
+      const { data } = await axios.get<Listing[]>(`${API_URL}/api/listings`, {
         headers: { Authorization: `Bearer ${authToken}` },
         params,
       });
@@ -55,7 +60,7 @@ export default function Home() {
 
   const fetchUser = async (authToken: string) => {
     try {
-      const { data } = await axios.get<LoginResponse>('http://localhost:3000/api/user', {
+      const { data } = await axios.get<LoginResponse>(`${API_URL}/api/user`, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
       console.log('Fetched user:', data.user);
@@ -69,7 +74,7 @@ export default function Home() {
 
   const handleLogin = async () => {
     try {
-      const { data } = await axios.post<LoginResponse>('http://localhost:3000/api/login', { email, password });
+      const { data } = await axios.post<LoginResponse>(`${API_URL}/api/login`, { email, password });
       console.log('Login response:', data);
       setToken(data.token);
       setUser(data.user);
@@ -95,7 +100,7 @@ export default function Home() {
   const handleCreateListing = async () => {
     if (!validateForm()) return;
     try {
-      await axios.post('http://localhost:3000/api/listings', newListing, {
+      await axios.post(`${API_URL}/api/listings`, newListing, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNewListing({ title: '', price: 0, location: '', description: '' });
