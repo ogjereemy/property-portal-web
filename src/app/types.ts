@@ -19,3 +19,9 @@ export interface User {
     token: string;
     user: User;
   }
+  
+  export interface CommunicationResponse {
+    virtualNumber?: string;
+    virtualEmail?: string;
+    communicationId: number;
+  }

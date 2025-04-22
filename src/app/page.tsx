@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import axios, { AxiosError } from 'axios';
-import { User, Listing, LoginResponse } from '../app/types';
+import { User, Listing, LoginResponse } from './types';
+import ContactAgent from './components/ContactAgent';
 
 export default function Home() {
   const [isMounted, setIsMounted] = useState(false);
@@ -36,30 +37,38 @@ export default function Home() {
       });
       setListings(data);
     } catch (error) {
-      console.error('Failed to fetch listings', error);
+      console.error('Failed to fetch listings:', error);
       setToast({ message: 'Failed to fetch listings', type: 'error' });
     }
   }, [filters]);
 
   const fetchUser = useCallback(async (authToken: string) => {
     try {
-      const { data } = await axios.get<LoginResponse>(`${API_URL}/api/user`, {
+      const { data } = await axios.get<LoginResponse>(`${API_URL}/api/auth`, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
       console.log('Fetched user:', data.user);
       setUser(data.user);
+      return true;
     } catch (error) {
-      console.error('Failed to fetch user', error);
-      setToken('');
-      setUser(null);
-      localStorage.removeItem('token');
-      setToast({ message: 'Session expired. Please log in again.', type: 'error' });
+      const err = error as AxiosError<{ message: string }>;
+      console.error('Failed to fetch user:', err.response?.data || err.message);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        console.log('Invalid or expired token, clearing session');
+        setToken('');
+        setUser(null);
+        localStorage.removeItem('token');
+        setToast({ message: 'Session expired. Please log in again.', type: 'error' });
+      } else {
+        setToast({ message: 'Failed to validate session', type: 'error' });
+      }
+      return false;
     }
   }, []);
 
   const handleAuth = async () => {
     try {
-      const endpoint = isLogin ? '/api/login' : '/api/register';
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
       const payload = isLogin ? { email, password } : { email, password, role };
       const { data } = await axios.post<LoginResponse>(`${API_URL}${endpoint}`, payload);
       console.log(`${isLogin ? 'Login' : 'Register'} response:`, data);
@@ -69,7 +78,7 @@ export default function Home() {
         setUser(data.user);
         localStorage.setItem('token', data.token);
         console.log('Stored token:', localStorage.getItem('token'));
-        fetchListings(data.token);
+        await fetchListings(data.token);
         setToast({ message: 'Login successful', type: 'success' });
       } else {
         setToast({ message: 'Registration successful. Please log in.', type: 'success' });
@@ -101,7 +110,7 @@ export default function Home() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNewListing({ title: '', price: 0, location: '', description: '' });
-      fetchListings(token);
+      await fetchListings(token);
       setToast({ message: 'Listing created successfully', type: 'success' });
     } catch (error) {
       const err = error as AxiosError<{ message: string }>;
@@ -123,12 +132,18 @@ export default function Home() {
 
   useEffect(() => {
     setIsMounted(true);
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      setToken(storedToken);
-      fetchListings(storedToken);
-      fetchUser(storedToken);
-    }
+    const initializeSession = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        console.log('Found stored token:', storedToken);
+        setToken(storedToken);
+        const isValid = await fetchUser(storedToken);
+        if (isValid) {
+          await fetchListings(storedToken);
+        }
+      }
+    };
+    initializeSession();
   }, [fetchListings, fetchUser]);
 
   useEffect(() => {
@@ -145,7 +160,7 @@ export default function Home() {
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed top-6 right-6 z-50 p-4 rounded-lg shadow-lg text-white animate-fade-in ${
+          className={`fixed top-6 right-6 z-60 p-4 rounded-lg shadow-lg text-white animate-fade-in ${
             toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
           }`}
         >
@@ -371,9 +386,7 @@ export default function Home() {
                     <p className="text-blue-600 font-bold text-lg">AED {listing.price.toLocaleString()}</p>
                     <p className="text-gray-600 font-medium">{listing.location}</p>
                     <p className="text-gray-500 text-sm mt-2 line-clamp-2">{listing.description}</p>
-                    <button className="mt-4 text-blue-600 font-semibold hover:underline transition">
-                      Contact Agent
-                    </button>
+                    <ContactAgent listingId={listing.id} user={user} token={token} setToast={setToast} />
                   </div>
                 </div>
               ))}
